@@ -1,59 +1,48 @@
 import { Console } from '@woowacourse/mission-utils';
+import { formatter } from '../utils/formatter.js';
+import { MESSAGES } from '../constants/messages.js';
 
 class OutputView {
     printWelcome() {
-        Console.print("안녕하세요. W편의점입니다.");
-        Console.print("현재 보유하고 있는 상품입니다.\n");
+        Console.print(MESSAGES.WELCOME);
+        Console.print(MESSAGES.CURRENT_PRODUCTS);
     }
 
     printProducts(products) {
         products.forEach(product => {
-            Console.print(`- ${product.name} ${this.formatPrice(product.price)} ${this.formatStock(product)}`);
+            Console.print(`- ${product.name} ${formatter.formatPrice(product.price)} ${product.getStockInfo()}`);
         });
         Console.print("");
     }
 
     printReceipt(receipt) {
-        Console.print("===========W 편의점=============");
-        Console.print("상품명\t\t수량\t금액");
+        const { RECEIPT } = MESSAGES;
+
+        Console.print(RECEIPT.HEADER);
+        Console.print(RECEIPT.HEADERS.ITEMS);
 
         receipt.items.forEach(item => {
-            const amount = this.formatNumber(item.product.price * item.quantity);
+            const amount = formatter.formatNumber(item.product.price * item.quantity);
             Console.print(`${item.product.name}\t\t${item.quantity}\t${amount}`);
         });
 
         if (receipt.freeItems.length > 0) {
-            Console.print("===========증\t정=============");
+            Console.print(RECEIPT.GIFT_HEADER);
             receipt.freeItems.forEach(item => {
                 Console.print(`${item.product.name}\t\t${item.quantity}`);
             });
         }
 
-        Console.print("==============================");
-        Console.print(`총구매액\t\t${receipt.totalQuantity}\t${this.formatNumber(receipt.totalAmount)}`);
-        Console.print(`행사할인\t\t\t-${this.formatNumber(receipt.promotionDiscount)}`);
-        Console.print(`멤버십할인\t\t\t-${this.formatNumber(receipt.membershipDiscount)}`);
-        Console.print(`내실돈\t\t\t ${this.formatNumber(receipt.finalAmount)}`);
+        Console.print(RECEIPT.FOOTER);
+        Console.print(`${RECEIPT.HEADERS.TOTAL}${receipt.totalQuantity}\t${formatter.formatNumber(receipt.totalAmount)}`);
+        Console.print(`${RECEIPT.HEADERS.PROMOTION}${formatter.formatNumber(receipt.promotionDiscount)}`);
+        Console.print(`${RECEIPT.HEADERS.MEMBERSHIP}${formatter.formatNumber(receipt.membershipDiscount)}`);
+        Console.print(`${RECEIPT.HEADERS.FINAL}${formatter.formatNumber(receipt.finalAmount)}`);
         Console.print("");
     }
 
     printError(message) {
         Console.print(message);
-    }
-
-    formatPrice(price) {
-        return `${price.toLocaleString()}원`;
-    }
-
-    formatStock(product) {
-        if (product.stock === 0) {
-            return '재고 없음';
-        }
-        return `${product.stock}개${product.promotionType ? ' ' + product.promotionType : ''}`;
-    }
-
-    formatNumber(number) {
-        return number.toLocaleString();
     }
 }
 

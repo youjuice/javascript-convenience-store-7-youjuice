@@ -1,3 +1,7 @@
+import { validator } from '../utils/validator.js';
+import { MESSAGES } from '../constants/messages.js';
+import {formatter} from "../utils/formatter.js";
+
 class Product {
     constructor(name, price, stock, promotionType = null) {
         this.validateProductInfo(name, price, stock);
@@ -9,15 +13,9 @@ class Product {
     }
 
     validateProductInfo(name, price, stock) {
-        if (!name || typeof name !== 'string') {
-            throw new Error('[ERROR] 상품명이 올바르지 않습니다.');
-        }
-        if (!Number.isInteger(price) || price <= 0) {
-            throw new Error('[ERROR] 가격이 올바르지 않습니다.');
-        }
-        if (!Number.isInteger(stock) || stock < 0) {
-            throw new Error('[ERROR] 재고 수량이 올바르지 않습니다.');
-        }
+        validator.validateString(name, '상품명');
+        validator.validatePositiveNumber(price, '가격');
+        validator.validateNumber(stock, '재고 수량');
     }
 
     hasEnoughStock(quantity) {
@@ -26,11 +24,10 @@ class Product {
 
     reduceStock(quantity, usePromotion = false) {
         if (!this.hasEnoughStock(quantity)) {
-            throw new Error('[ERROR] 재고가 부족합니다.');
+            throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
         }
 
         if (usePromotion && this.promotionStock > 0) {
-            // 프로모션 재고를 우선적으로 사용
             const promotionUse = Math.min(quantity, this.promotionStock);
             this.promotionStock -= promotionUse;
             quantity -= promotionUse;
@@ -42,17 +39,12 @@ class Product {
     }
 
     setPromotionStock(stock) {
-        if (!Number.isInteger(stock) || stock < 0) {
-            throw new Error('[ERROR] 프로모션 재고 수량이 올바르지 않습니다.');
-        }
+        validator.validateNumber(stock, '프로모션 재고 수량');
         this.promotionStock = stock;
     }
 
     getStockInfo() {
-        if (this.stock === 0 && this.promotionStock === 0) {
-            return '재고 없음';
-        }
-        return `${this.stock + this.promotionStock}개${this.promotionType ? ' ' + this.promotionType : ''}`;
+        return formatter.formatStock(this.stock + this.promotionStock, this.promotionType);
     }
 }
 
