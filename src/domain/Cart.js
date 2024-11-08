@@ -1,23 +1,24 @@
+import { validator } from '../utils/validator.js';
+import { MESSAGES } from '../constants/messages.js';
+
 class Cart {
     constructor() {
         this.items = new Map();
     }
 
     addItem(product, quantity) {
-        this.validateQuantity(quantity);
+        try {
+            validator.validatePositiveNumber(quantity, '수량');
+        } catch (error) {
+            throw new Error(MESSAGES.ERROR.INVALID_QUANTITY);
+        }
 
         if (!product.hasEnoughStock(quantity)) {
-            throw new Error('[ERROR] 재고 수량을 초과하여 구매할 수 없습니다. 다시 입력해 주세요.');
+            throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
         }
 
         const currentQuantity = this.items.get(product) || 0;
         this.items.set(product, currentQuantity + quantity);
-    }
-
-    validateQuantity(quantity) {
-        if (!Number.isInteger(quantity) || quantity <= 0) {
-            throw new Error('[ERROR] 올바르지 않은 수량입니다.');
-        }
     }
 
     getItems() {
