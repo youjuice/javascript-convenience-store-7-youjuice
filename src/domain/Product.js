@@ -20,13 +20,6 @@ class Product {
         }
     }
 
-    setPromotionStock(stock) {
-        if (!Number.isInteger(stock) || stock < 0) {
-            throw new Error('[ERROR] 프로모션 재고 수량이 올바르지 않습니다.');
-        }
-        this.promotionStock = stock;
-    }
-
     hasEnoughStock(quantity) {
         return this.stock + this.promotionStock >= quantity;
     }
@@ -37,16 +30,26 @@ class Product {
         }
 
         if (usePromotion && this.promotionStock > 0) {
+            // 프로모션 재고를 우선적으로 사용
             const promotionUse = Math.min(quantity, this.promotionStock);
             this.promotionStock -= promotionUse;
             quantity -= promotionUse;
         }
 
-        this.stock -= quantity;
+        if (quantity > 0) {
+            this.stock -= quantity;
+        }
+    }
+
+    setPromotionStock(stock) {
+        if (!Number.isInteger(stock) || stock < 0) {
+            throw new Error('[ERROR] 프로모션 재고 수량이 올바르지 않습니다.');
+        }
+        this.promotionStock = stock;
     }
 
     getStockInfo() {
-        if (this.stock + this.promotionStock === 0) {
+        if (this.stock === 0 && this.promotionStock === 0) {
             return '재고 없음';
         }
         return `${this.stock + this.promotionStock}개${this.promotionType ? ' ' + this.promotionType : ''}`;
