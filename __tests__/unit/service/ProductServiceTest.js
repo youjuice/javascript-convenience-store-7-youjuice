@@ -1,5 +1,6 @@
 import ProductService from '../../../src/service/ProductService.js';
 import { promises as fs } from 'fs';
+import Product from "../../../src/domain/Product.js";
 
 jest.mock('fs', () => ({
     promises: {
@@ -72,15 +73,10 @@ describe('ProductService 클래스 테스트', () => {
         expect(ciderProducts.some(p => p.promotionType === null)).toBeTruthy();
     });
 
-    test('재고가 0인 경우 재고 없음으로 표시되어야 한다', async () => {
-        const mockFileContent =
-            'name,price,quantity,promotion\n' +
-            '콜라,1000,0,null\n';
+    test('재고가 0인 경우 재고 없음으로 표시되어야 한다', () => {
+        const cola = new Product('콜라', 1000, 0);
+        const stockInfo = cola.getStockInfo();
 
-        fs.readFile.mockResolvedValue(mockFileContent);
-        await productService.loadProducts();
-
-        const cola = productService.getProduct('콜라');
-        expect(cola.getStockInfo()).toBe('재고 없음');
+        expect(stockInfo).toBe('재고 없음');
     });
 });
