@@ -1,3 +1,5 @@
+import { validator } from '../utils/validator.js';
+
 class Receipt {
     constructor(cartItems, freeItems, totalAmount) {
         this.items = cartItems;
@@ -9,35 +11,27 @@ class Receipt {
         this.totalQuantity = this.calculateTotalQuantity();
     }
 
-    calculateTotalQuantity() {
-        return this.items.reduce((total, item) => total + item.quantity, 0);
-    }
-
     applyPromotionDiscount(discount) {
-        this.validateDiscount(discount);
+        validator.validateNumber(discount, '할인 금액');
         this.promotionDiscount = discount;
         this.updateFinalAmount();
     }
 
     applyMembershipDiscount(discount) {
-        this.validateDiscount(discount);
+        validator.validateNumber(discount, '할인 금액');
         this.membershipDiscount = discount;
         this.updateFinalAmount();
     }
 
-    validateDiscount(discount) {
-        if (!Number.isInteger(discount) || discount < 0) {
-            throw new Error('[ERROR] 올바르지 않은 할인 금액입니다.');
-        }
-    }
-
     updateFinalAmount() {
-        this.finalAmount = this.totalAmount - this.promotionDiscount - this.membershipDiscount;
-        if (this.finalAmount < 0) this.finalAmount = 0;
+        this.finalAmount = Math.max(
+            0,
+            this.totalAmount - this.promotionDiscount - this.membershipDiscount
+        );
     }
 
-    getFreeItemCount() {
-        return this.freeItems.reduce((total, item) => total + item.quantity, 0);
+    calculateTotalQuantity() {
+        return this.items.reduce((total, item) => total + item.quantity, 0);
     }
 }
 
