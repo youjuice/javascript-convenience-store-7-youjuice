@@ -1,4 +1,8 @@
 import { promises as fs } from 'fs';
+import { CONFIG } from '../constants/config.js';
+import { MESSAGES } from '../constants/messages.js';
+import { parser } from '../utils/parser.js';
+import Promotion from '../domain/Promotion.js';
 
 class PromotionService {
     constructor() {
@@ -7,37 +11,20 @@ class PromotionService {
 
     async loadPromotions() {
         try {
-            const content = await fs.readFile('public/promotions.md', 'utf-8');
+            const content = await fs.readFile(CONFIG.FILE.PROMOTIONS, 'utf-8');
             const lines = content.split('\n')
                 .map(line => line.trim())
                 .filter(line => line && !line.startsWith('name'));
 
             for (const line of lines) {
-                const [type, quantity] = line.split(',').map(item => item?.trim());
-
-                if (!type || !quantity || isNaN(Number(quantity))) {
-                    throw new Error('[ERROR] 잘못된 프로모션 정보 형식입니다.');
-                }
-
-                const promotion = {
-                    type,
-                    requiredQuantity: Number(quantity),
-                    freeQuantity: 1,
-                    calculateFreeItems(purchaseQuantity) {
-                        return Math.floor(purchaseQuantity / this.requiredQuantity);
-                    },
-                    isApplicable(quantity) {
-                        return quantity >= this.requiredQuantity;
-                    }
-                };
-
-                this.promotions.set(type, promotion);
+                const { type, requiredQuantity } = parser.parsePromotionInfo(line);
+                this.promotions.set(type, new Promotion(type, requiredQuantity));
             }
         } catch (error) {
             if (error.message.includes('[ERROR]')) {
                 throw error;
             }
-            throw new Error('[ERROR] 프로모션 정보를 불러오는데 실패했습니다.');
+            throw new Error(MESSAGES.ERROR.LOAD_PROMOTION_FAIL);
         }
     }
 
