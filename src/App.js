@@ -31,7 +31,6 @@ class App {
 
   initializeBusinessLogic() {
     this.paymentService = new PaymentService(
-        this.productService,
         this.promotionService,
         this.discountService,
         this.inventoryService
@@ -47,7 +46,6 @@ class App {
 
     this.shoppingService = new ShoppingService(
         this.productService,
-        this.paymentService,
         this.inputView,
         this.outputView,
         this.orderService

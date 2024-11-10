@@ -51,7 +51,6 @@ describe('PaymentService 클래스 테스트', () => {
         };
 
         paymentService = new PaymentService(
-            mockProductService,
             mockPromotionService,
             mockDiscountService,
             mockInventoryService

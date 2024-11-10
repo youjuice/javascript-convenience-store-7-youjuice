@@ -1,8 +1,7 @@
 import Receipt from "../domain/Receipt.js";
 
 class PaymentService {
-    constructor(productService, promotionService, discountService, inventoryService) {
-        this.productService = productService;
+    constructor(promotionService, discountService, inventoryService) {
         this.promotionService = promotionService;
         this.discountService = discountService;
         this.inventoryService = inventoryService;

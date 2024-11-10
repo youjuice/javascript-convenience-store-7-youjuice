@@ -1,11 +1,11 @@
 import Cart from "../domain/Cart.js";
+import {validator} from "../utils/validator.js";
 
 class ShoppingService {
-    constructor(productService, paymentService, inputView, outputView, validationService, orderService) {
+    constructor(productService, inputView, outputView, orderService) {
         this.productService = productService;
         this.inputView = inputView;
         this.outputView = outputView;
-        this.validationService = validationService;
         this.orderService = orderService;
         this.cart = null;
     }
@@ -27,7 +27,7 @@ class ShoppingService {
 
     async handleAdditionalPurchase() {
         const answer = await this.inputView.readAdditionalPurchase();
-        return await this.validationService.validateYesNo(answer);
+        return validator.validateYesNo(answer);
     }
 
     async handleOrder() {

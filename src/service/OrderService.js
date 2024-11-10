@@ -1,13 +1,13 @@
 import { parser } from "../utils/parser.js";
 import { MESSAGES } from "../constants/messages.js";
+import {validator} from "../utils/validator.js";
 
 class OrderService {
-    constructor(productService, paymentService, inputView, outputView, validationService, inventoryService) {
+    constructor(productService, paymentService, inputView, outputView, inventoryService) {
         this.productService = productService;
         this.paymentService = paymentService;
         this.inputView = inputView;
         this.outputView = outputView;
-        this.validationService = validationService;
         this.inventoryService = inventoryService;
     }
 
@@ -45,7 +45,7 @@ class OrderService {
     async handlePromotion(cart, product, quantity) {
         if (this.paymentService.canApplyPromotion(product, quantity)) {
             const answer = await this.inputView.readPromotionAdd(product.name);
-            if (await this.validationService.validateYesNo(answer)) {
+            if (validator.validateYesNo(answer)) {
                 if (!this.inventoryService.checkStockAvailability(product, quantity + 1)) {
                     throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
                 }
@@ -58,7 +58,7 @@ class OrderService {
 
     async completePurchase(cart) {
         const membershipAnswer = await this.inputView.readMembershipUse();
-        const useMembership = await this.validationService.validateYesNo(membershipAnswer);
+        const useMembership = validator.validateYesNo(membershipAnswer);
         const receipt = await this.paymentService.processPayment(cart, useMembership);
         this.outputView.printReceipt(receipt);
     }
