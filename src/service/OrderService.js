@@ -1,13 +1,14 @@
 import { parser } from "../utils/parser.js";
-import {MESSAGES} from "../constants/messages.js";
+import { MESSAGES } from "../constants/messages.js";
 
 class OrderService {
-    constructor(productService, paymentService, inputView, outputView, validationService) {
+    constructor(productService, paymentService, inputView, outputView, validationService, inventoryService) {
         this.productService = productService;
         this.paymentService = paymentService;
         this.inputView = inputView;
         this.outputView = outputView;
         this.validationService = validationService;
+        this.inventoryService = inventoryService;
     }
 
     async processOrder(cart) {
@@ -23,25 +24,29 @@ class OrderService {
 
     async processOrderItems(cart, items) {
         for (const {name, quantity} of items) {
-            const product = this.productService.getProduct(name);
-
-            if (!product.hasEnoughStock(quantity)) {
-                throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
-            }
-
-            if (await this.handlePromotion(cart, product, quantity)) {
-                continue;
-            }
-
-            cart.addItem(product, quantity);
+            await this.processOneItem(cart, name, quantity);
         }
+    }
+
+    async processOneItem(cart, name, quantity) {
+        const product = this.productService.getProduct(name);
+
+        if (!this.inventoryService.checkStockAvailability(product, quantity)) {
+            throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
+        }
+
+        if (await this.handlePromotion(cart, product, quantity)) {
+            return;
+        }
+
+        cart.addItem(product, quantity);
     }
 
     async handlePromotion(cart, product, quantity) {
         if (this.paymentService.canApplyPromotion(product, quantity)) {
             const answer = await this.inputView.readPromotionAdd(product.name);
             if (await this.validationService.validateYesNo(answer)) {
-                if (!product.hasEnoughStock(quantity + 1)) {
+                if (!this.inventoryService.checkStockAvailability(product, quantity + 1)) {
                     throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
                 }
                 cart.addItem(product, quantity + 1);
@@ -54,7 +59,6 @@ class OrderService {
     async completePurchase(cart) {
         const membershipAnswer = await this.inputView.readMembershipUse();
         const useMembership = await this.validationService.validateYesNo(membershipAnswer);
-
         const receipt = await this.paymentService.processPayment(cart, useMembership);
         this.outputView.printReceipt(receipt);
     }
