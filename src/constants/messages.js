@@ -15,7 +15,12 @@ export const MESSAGES = {
         INVALID_DISCOUNT: '[ERROR] 올바르지 않은 할인입니다.',
         LOAD_PRODUCT_FAIL: '[ERROR] 상품 정보를 불러오는데 실패했습니다.',
         LOAD_PROMOTION_FAIL: '[ERROR] 프로모션 정보를 불러오는데 실패했습니다.',
-        INVALID_YES_NO: '[ERROR] Y 또는 N으로 입력해 주세요.'
+        INVALID_YES_NO: '[ERROR] Y 또는 N으로만 입력해 주세요.',
+        INVALID_STRING: '[ERROR] 올바르지 않은 문자열입니다.',
+        INVALID_PRODUCT_FORMAT: '[ERROR] 잘못된 상품 정보 형식입니다.',
+        INVALID_PROMOTION_FORMAT: '[ERROR] 잘못된 프로모션 정보 형식입니다.',
+        NEGATIVE_NUMBER: '[ERROR] 음수는 입력할 수 없습니다.',
+        ZERO_OR_NEGATIVE: '[ERROR] 0 또는 음수는 입력할 수 없습니다.'
     },
     RECEIPT: {
         HEADER: "===========W 편의점=============",
