@@ -31,23 +31,23 @@ class ShoppingService {
     }
 
     async handleOrder() {
-        let retryCount = 0;
         const MAX_RETRIES = 3;
-
-        while (retryCount < MAX_RETRIES) {
-            try {
-                await this.orderService.processOrder(this.cart);
-                return true;
-            } catch (error) {
-                this.outputView.printError(error.message);
-                retryCount++;
-                if (retryCount === MAX_RETRIES) {
-                    return false;
-                }
-                this.cart = new Cart();
-            }
+        for (let retryCount = 0; retryCount < MAX_RETRIES; retryCount++) {
+            const result = await this.tryProcessOrder();
+            if (result) return true;
         }
         return false;
+    }
+
+    async tryProcessOrder() {
+        try {
+            await this.orderService.processOrder(this.cart);
+            return true;
+        } catch (error) {
+            this.outputView.printError(error.message);
+            this.cart = new Cart();
+            return false;
+        }
     }
 }
 
