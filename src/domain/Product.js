@@ -1,6 +1,6 @@
 import { validator } from '../utils/validator.js';
 import { MESSAGES } from '../constants/messages.js';
-import {formatter} from "../utils/formatter.js";
+import { formatter } from "../utils/formatter.js";
 
 class Product {
     constructor(name, price, stock, promotionType = null) {
