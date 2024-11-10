@@ -5,7 +5,6 @@ import PaymentService from './service/PaymentService.js';
 import InputView from './view/InputView.js';
 import OutputView from './view/OutputView.js';
 import Membership from './domain/Membership.js';
-import ValidationService from "./service/ValidationService.js";
 import ShoppingService from './service/ShoppingService.js';
 import OrderService from "./service/OrderService.js";
 import InventoryService from "./service/InventoryService.js";
@@ -28,7 +27,6 @@ class App {
   initializeViews() {
     this.inputView = new InputView();
     this.outputView = new OutputView();
-    this.validationService = new ValidationService(this.outputView);
   }
 
   initializeBusinessLogic() {
@@ -44,7 +42,6 @@ class App {
         this.paymentService,
         this.inputView,
         this.outputView,
-        this.validationService,
         this.inventoryService
     );
 
@@ -53,7 +50,6 @@ class App {
         this.paymentService,
         this.inputView,
         this.outputView,
-        this.validationService,
         this.orderService
     );
   }
