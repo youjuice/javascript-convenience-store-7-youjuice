@@ -77,9 +77,11 @@
     - "[ERROR]" 접두어를 포함한 에러 메시지 출력
     - 에러 상황에 맞는 적절한 안내 메시지 제공
 
+<br>
+
 ## 폴더 구조
 ```
-📦src
+📦 src
  ┣ 📂 constants
  ┃ ┣ config.js
  ┃ ┗ messages.js
