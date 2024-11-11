@@ -1,20 +1,45 @@
-import { parser } from "../utils/parser.js";
-import { MESSAGES } from "../constants/messages.js";
-import {validator} from "../utils/validator.js";
+import Receipt from "../domain/Receipt.js";
+import {MESSAGES} from "../constants/messages.js";
+import {parser} from "../utils/parser.js";
 
 class OrderService {
-    constructor(productService, paymentService, inputView, outputView, inventoryService) {
+    constructor(
+        productService,
+        promotionService,
+        cartService,
+        discountService,
+        inputView,
+        outputView
+    ) {
         this.productService = productService;
-        this.paymentService = paymentService;
+        this.promotionService = promotionService;
+        this.cartService = cartService;
+        this.discountService = discountService;
         this.inputView = inputView;
         this.outputView = outputView;
-        this.inventoryService = inventoryService;
     }
 
-    async processOrder(cart) {
-        const items = await this.getOrderItems();
-        await this.processOrderItems(cart, items);
-        await this.completePurchase(cart);
+    async processOrder() {
+        try {
+            const orderItems = await this.getOrderItems();
+            await this.processOrderItems(orderItems);
+
+            if (this.cartService.isEmpty()) {
+                return null;
+            }
+
+            const useMembership = await this.checkMembership();
+            const receipt = await this.createReceipt(useMembership);
+            await this.updateInventory(receipt);
+            this.outputView.printReceipt(receipt);
+
+            return receipt;
+        } catch (error) {
+            this.outputView.printError(error.message);
+            return null;
+        } finally {
+            this.cartService.clear();
+        }
     }
 
     async getOrderItems() {
@@ -22,45 +47,65 @@ class OrderService {
         return parser.parseProductInput(input);
     }
 
-    async processOrderItems(cart, items) {
-        for (const {name, quantity} of items) {
-            await this.processOneItem(cart, name, quantity);
-        }
-    }
+    async processOrderItems(orderItems) {
+        for (const { name, quantity } of orderItems) {
+            const product = await this.productService.getProduct(name);
 
-    async processOneItem(cart, name, quantity) {
-        const product = this.productService.getProduct(name);
-
-        if (!this.inventoryService.checkStockAvailability(product, quantity)) {
-            throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
-        }
-
-        if (await this.handlePromotion(cart, product, quantity)) {
-            return;
-        }
-
-        cart.addItem(product, quantity);
-    }
-
-    async handlePromotion(cart, product, quantity) {
-        if (this.paymentService.canApplyPromotion(product, quantity)) {
-            const answer = await this.inputView.readPromotionAdd(product.name);
-            if (validator.validateYesNo(answer)) {
-                if (!this.inventoryService.checkStockAvailability(product, quantity + 1)) {
-                    throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
-                }
-                cart.addItem(product, quantity + 1);
-                return true;
+            if (!await this.productService.checkStockAvailability(product, quantity)) {
+                throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
             }
+
+            if (this.promotionService.isPromotionApplicable(product, quantity)) {
+                await this.handlePromotion(product, quantity);
+                continue;
+            }
+
+            this.cartService.addItem(product, quantity);
         }
-        return false;
     }
 
-    async completePurchase(cart) {
-        const membershipAnswer = await this.inputView.readMembershipUse();
-        const useMembership = validator.validateYesNo(membershipAnswer);
-        const receipt = await this.paymentService.processPayment(cart, useMembership);
-        this.outputView.printReceipt(receipt);
+    async handlePromotion(product, quantity) {
+        const answer = await this.inputView.readPromotionAdd(product.name);
+        if (answer.toUpperCase() === 'Y') {
+            if (!await this.productService.checkStockAvailability(product, quantity + 1)) {
+                throw new Error(MESSAGES.ERROR.INSUFFICIENT_STOCK);
+            }
+            this.cartService.addItem(product, quantity + 1);
+        } else {
+            this.cartService.addItem(product, quantity);
+        }
+    }
+
+    async checkMembership() {
+        const answer = await this.inputView.readMembershipUse();
+        return answer.toUpperCase() === 'Y';
+    }
+
+    async createReceipt(useMembership) {
+        const cartItems = this.cartService.getItems();
+        const {
+            promotionalDiscount,
+            membershipDiscount,
+            freeItems
+        } = this.discountService.calculateTotalDiscount(cartItems, useMembership);
+
+        return new Receipt(
+            cartItems,
+            freeItems,
+            this.cartService.calculateTotal(),
+            promotionalDiscount,
+            membershipDiscount
+        );
+    }
+
+    async updateInventory(receipt) {
+        for (const item of receipt.items) {
+            await this.productService.updateStock(item.product, item.quantity);
+        }
+
+        for (const item of receipt.freeItems) {
+            await this.productService.updateStock(item.product, item.quantity, true);
+        }
     }
 }
 

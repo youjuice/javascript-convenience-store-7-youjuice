@@ -4,50 +4,48 @@ class DiscountService {
         this.membership = membership;
     }
 
-    calculatePromotionDiscount(items) {
-        const freeItems = this.calculateFreeItems(items);
-        const promotionDiscount = freeItems.reduce((total, item) => {
-            return total + (item.product.price * item.quantity);
-        }, 0);
+    calculateTotalDiscount(cartItems, useMembership) {
+        const { promotionalDiscount, freeItems } = this.calculatePromotionalDiscount(cartItems);
+        const membershipDiscount = useMembership ?
+            this.calculateMembershipDiscount(cartItems, promotionalDiscount) :
+            0;
 
         return {
-            freeItems,
-            promotionDiscount
+            promotionalDiscount,
+            membershipDiscount,
+            freeItems
         };
     }
 
-    calculateFreeItems(items) {
+    calculatePromotionalDiscount(cartItems) {
         const freeItems = [];
+        let totalDiscount = 0;
 
-        items.forEach(({product, quantity}) => {
+        cartItems.forEach(({product, quantity}) => {
             if (!product.promotionType) return;
 
-            const promotion = this.promotionService.getPromotion(product.promotionType);
-            if (!promotion) return;
-
-            const freeQuantity = promotion.calculateFreeItems(quantity);
+            const freeQuantity = this.promotionService.calculateFreeQuantity(product, quantity);
             if (freeQuantity > 0) {
                 freeItems.push({
                     product,
                     quantity: freeQuantity
                 });
+                totalDiscount += product.price * freeQuantity;
             }
         });
 
-        return freeItems;
+        return {
+            promotionalDiscount: totalDiscount,
+            freeItems
+        };
     }
 
-    calculateMembershipDiscount(amount) {
-        return this.membership.calculateDiscount(amount);
-    }
+    calculateMembershipDiscount(cartItems, promotionalDiscount) {
+        const subtotal = cartItems.reduce((total, item) => {
+            return total + (item.product.price * item.quantity);
+        }, 0);
 
-    canApplyPromotion(product, quantity) {
-        if (!product.promotionType) return false;
-
-        const promotion = this.promotionService.getPromotion(product.promotionType);
-        if (!promotion) return false;
-
-        return promotion.isApplicable(quantity);
+        return this.membership.calculateDiscount(subtotal - promotionalDiscount);
     }
 }
 
