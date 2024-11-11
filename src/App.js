@@ -1,27 +1,21 @@
 import ProductService from './service/ProductService.js';
 import PromotionService from './service/PromotionService.js';
 import DiscountService from './service/DiscountService.js';
-import PaymentService from './service/PaymentService.js';
 import InputView from './view/InputView.js';
 import OutputView from './view/OutputView.js';
 import Membership from './domain/Membership.js';
-import ShoppingService from './service/ShoppingService.js';
 import OrderService from "./service/OrderService.js";
-import InventoryService from "./service/InventoryService.js";
+import ProductRepository from "./repositories/ProductRepository.js";
+import PromotionRepository from "./repositories/PromotionRepository.js";
+import CartService from "./service/CartService.js";
+import {CONFIG} from "./constants/config.js";
+import ShoppingService from "./service/ShoppingService.js";
 
 class App {
   constructor() {
-    this.initializeServices();
     this.initializeViews();
-    this.initializeBusinessLogic();
-  }
-
-  initializeServices() {
-    this.productService = new ProductService();
-    this.promotionService = new PromotionService();
-    this.membership = new Membership();
-    this.inventoryService = new InventoryService();
-    this.discountService = new DiscountService(this.promotionService, this.membership);
+    this.initializeRepositories();
+    this.initializeServices();
   }
 
   initializeViews() {
@@ -29,42 +23,50 @@ class App {
     this.outputView = new OutputView();
   }
 
-  initializeBusinessLogic() {
-    this.paymentService = new PaymentService(
+  initializeRepositories() {
+    this.productRepository = new ProductRepository();
+    this.promotionRepository = new PromotionRepository();
+  }
+
+  initializeServices() {
+    this.productService = new ProductService(this.productRepository);
+    this.promotionService = new PromotionService(this.promotionRepository);
+    this.cartService = new CartService();
+
+    this.discountService = new DiscountService(
         this.promotionService,
-        this.discountService,
-        this.inventoryService
+        new Membership()
     );
 
     this.orderService = new OrderService(
         this.productService,
-        this.paymentService,
+        this.promotionService,
+        this.cartService,
+        this.discountService,
         this.inputView,
-        this.outputView,
-        this.inventoryService
+        this.outputView
     );
 
     this.shoppingService = new ShoppingService(
         this.productService,
-        this.inputView,
-        this.outputView,
-        this.orderService
+        this.orderService,
+        this.outputView
     );
+  }
+
+  async initialize() {
+    try {
+      await this.productRepository.loadFromFile(CONFIG.FILE.PRODUCTS);
+      await this.promotionRepository.loadFromFile(CONFIG.FILE.PROMOTIONS);
+    } catch (error) {
+      this.outputView.printError(error.message);
+      throw error;
+    }
   }
 
   async run() {
     await this.initialize();
     await this.shoppingService.startShopping();
-  }
-
-  async initialize() {
-    try {
-      await this.productService.loadProducts();
-      await this.promotionService.loadPromotions();
-    } catch (error) {
-      this.outputView.printError(error.message);
-      throw error;
-    }
   }
 }
 
