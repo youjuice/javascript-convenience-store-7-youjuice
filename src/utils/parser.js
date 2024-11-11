@@ -1,4 +1,5 @@
 import {validator} from "./validator.js";
+import {MESSAGES} from "../constants/messages.js";
 
 export const parser = {
     parseProductInput(input) {
@@ -15,7 +16,7 @@ export const parser = {
         }
 
         if (items.length === 0) {
-            throw new Error('[ERROR] 올바르지 않은 형식으로 입력했습니다.');
+            throw new Error(MESSAGES.ERROR.INVALID_FORMAT);
         }
 
         return items;
@@ -25,7 +26,7 @@ export const parser = {
         const [name, price, stock, promotion] = line.split(',').map(item => item?.trim());
 
         if (!name || !price || !stock || isNaN(Number(price)) || isNaN(Number(stock))) {
-            throw new Error('[ERROR] 잘못된 상품 정보 형식입니다.');
+            throw new Error(MESSAGES.ERROR.INVALID_PRODUCT_FORMAT);
         }
 
         return {
@@ -40,7 +41,7 @@ export const parser = {
         const [type, quantity] = line.split(',').map(item => item?.trim());
 
         if (!type || !quantity || isNaN(Number(quantity))) {
-            throw new Error('[ERROR] 잘못된 프로모션 정보 형식입니다.');
+            throw new Error(MESSAGES.ERROR.INVALID_PROMOTION_FORMAT);
         }
 
         return {
