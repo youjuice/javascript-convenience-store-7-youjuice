@@ -1,82 +1,55 @@
 import ProductService from '../../../src/service/ProductService.js';
-import { promises as fs } from 'fs';
-import Product from "../../../src/domain/Product.js";
-
-jest.mock('fs', () => ({
-    promises: {
-        readFile: jest.fn()
-    }
-}));
+import ProductRepository from '../../../src/repositories/ProductRepository.js';
+import { MESSAGES } from '../../../src/constants/messages.js';
+import Product from '../../../src/domain/Product.js';
 
 describe('ProductService 클래스 테스트', () => {
     let productService;
+    let productRepository;
 
     beforeEach(() => {
-        productService = new ProductService();
-        jest.clearAllMocks();
+        productRepository = new ProductRepository();
+        productService = new ProductService(productRepository);
     });
 
-    test('상품 정보를 정상적으로 로드해야 한다', async () => {
-        const mockFileContent =
-            'name,price,quantity,promotion\n' +
-            '콜라,1000,10,탄산2+1\n' +
-            '콜라,1000,10,null\n';
+    test('getProduct 메서드가 올바르게 동작해야 한다', async () => {
+        // 존재하는 상품 조회
+        const mockProduct = new Product('콜라', 1000, 10, '탄산2+1');
+        jest.spyOn(productRepository, 'findByName').mockResolvedValue(mockProduct);
 
-        fs.readFile.mockResolvedValue(mockFileContent);
+        const product = await productService.getProduct('콜라');
+        expect(product).toEqual(mockProduct);
 
-        await productService.loadProducts();
-
-        const cola = productService.getProduct('콜라');
-        expect(cola.name).toBe('콜라');
-        expect(cola.price).toBe(1000);
-        expect(cola.stock).toBe(10);
+        // 존재하지 않는 상품 조회
+        jest.spyOn(productRepository, 'findByName').mockResolvedValue(null);
+        await expect(productService.getProduct('없는상품')).rejects.toThrow(MESSAGES.ERROR.INVALID_PRODUCT);
     });
 
-    test('잘못된 형식의 파일 내용에 대해 에러가 발생해야 한다', async () => {
-        const mockFileContent = '잘못된,형식의,상품정보';
-        fs.readFile.mockResolvedValue(mockFileContent);
+    test('getAllProducts 메서드가 올바르게 동작해야 한다', async () => {
+        const mockProducts = [
+            new Product('콜라', 1000, 10, '탄산2+1'),
+            new Product('콜라', 1000, 10, null),
+            new Product('사이다', 1000, 8, '탄산2+1'),
+            new Product('사이다', 1000, 7, null)
+        ];
+        jest.spyOn(productRepository, 'findAll').mockReturnValue(mockProducts);
 
-        await expect(productService.loadProducts()).rejects.toThrow('[ERROR]');
+        const allProducts = await productService.getAllProducts();
+        expect(allProducts).toEqual(mockProducts);
     });
 
-    test('존재하지 않는 상품 조회 시 에러가 발생해야 한다', async () => {
-        expect(() => productService.getProduct('없는상품')).toThrow('[ERROR]');
+    test('checkStockAvailability 메서드가 올바르게 동작해야 한다', async () => {
+        const mockProduct = new Product('콜라', 1000, 10, '탄산2+1');
+
+        expect(await productService.checkStockAvailability(mockProduct, 5)).toBeTruthy();
+        expect(await productService.checkStockAvailability(mockProduct, 11)).toBeFalsy();
     });
 
-    test('모든 상품 목록을 조회할 수 있어야 한다', async () => {
-        const mockFileContent =
-            'name,price,quantity,promotion\n' +
-            '콜라,1000,10,탄산2+1\n' +
-            '콜라,1000,10,null\n' +
-            '사이다,1000,8,탄산2+1\n' +
-            '사이다,1000,7,null\n';
+    test('updateStock 메서드가 올바르게 동작해야 한다', async () => {
+        const mockProduct = new Product('콜라', 1000, 10, '탄산2+1');
+        jest.spyOn(productRepository, 'updateStock').mockReturnValue(mockProduct);
 
-        fs.readFile.mockResolvedValue(mockFileContent);
-        await productService.loadProducts();
-
-        const allProducts = productService.getAllProducts();
-        // 각 상품마다 3가지 버전이 있으므로 총 6개
-        expect(allProducts).toHaveLength(6);
-
-        // 콜라 관련 검증
-        const colaProducts = allProducts.filter(p => p.name === '콜라');
-        expect(colaProducts).toHaveLength(3);
-        expect(colaProducts.some(p => p.promotionType === '탄산2+1' && p.stock > 0)).toBeTruthy();
-        expect(colaProducts.some(p => p.promotionType === '탄산2+1' && p.stock === 0)).toBeTruthy();
-        expect(colaProducts.some(p => p.promotionType === null)).toBeTruthy();
-
-        // 사이다 관련 검증
-        const ciderProducts = allProducts.filter(p => p.name === '사이다');
-        expect(ciderProducts).toHaveLength(3);
-        expect(ciderProducts.some(p => p.promotionType === '탄산2+1' && p.stock > 0)).toBeTruthy();
-        expect(ciderProducts.some(p => p.promotionType === '탄산2+1' && p.stock === 0)).toBeTruthy();
-        expect(ciderProducts.some(p => p.promotionType === null)).toBeTruthy();
-    });
-
-    test('재고가 0인 경우 재고 없음으로 표시되어야 한다', () => {
-        const cola = new Product('콜라', 1000, 0);
-        const stockInfo = cola.getStockInfo();
-
-        expect(stockInfo).toBe('재고 없음');
+        const updatedProduct = await productService.updateStock(mockProduct, 3);
+        expect(updatedProduct).toEqual(mockProduct);
     });
 });
