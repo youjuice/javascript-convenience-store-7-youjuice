@@ -9,9 +9,33 @@ class OutputView {
     }
 
     printProducts(products) {
+        const groupedProducts = {};
+
         products.forEach(product => {
-            Console.print(`- ${product.name} ${formatter.formatPrice(product.price)} ${product.getStockInfo()}`);
+            const key = `${product.name}-${product.price}`;
+            if (!groupedProducts[key]) {
+                groupedProducts[key] = [];
+            }
+            groupedProducts[key].push(product);
         });
+
+        for (const productGroup of Object.values(groupedProducts)) {
+            const promotionProduct = productGroup.find(product => product.promotionType);
+            const regularProduct = productGroup.find(product => !product.promotionType);
+
+            if (promotionProduct) {
+                Console.print(`- ${promotionProduct.name} ${formatter.formatPrice(promotionProduct.price)} ${promotionProduct.getStockInfo()}`);
+
+                if (regularProduct) {
+                    Console.print(`- ${regularProduct.name} ${formatter.formatPrice(regularProduct.price)} ${regularProduct.getStockInfo()}`);
+                } else {
+                    Console.print(`- ${promotionProduct.name} ${formatter.formatPrice(promotionProduct.price)} 재고 없음`);
+                }
+            } else if (regularProduct) {
+                Console.print(`- ${regularProduct.name} ${formatter.formatPrice(regularProduct.price)} ${regularProduct.getStockInfo()}`);
+            }
+        }
+
         Console.print("");
     }
 
